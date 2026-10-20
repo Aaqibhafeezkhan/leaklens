@@ -1,0 +1,19 @@
+name: LeakLens
+description: Scan notebooks and scripts for ML data leakage (fit before split, SMOTE before split, fit on test data)
+branding:
+  icon: search
+  color: blue
+inputs:
+  path:
+    description: File or folder to scan
+    default: "."
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    - run: pip install "${{ github.action_path }}"
+      shell: bash
+    - run: leaklens --scan "${{ inputs.path }}"
+      shell: bash

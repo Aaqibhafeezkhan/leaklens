@@ -1,38 +1,91 @@
 # LeakLens
 
-Audit datasets and ML code for data leakage before it fools you.
+[![CI](https://github.com/eyadstein/leaklens/actions/workflows/ci.yml/badge.svg)](https://github.com/eyadstein/leaklens/actions/workflows/ci.yml)
+[![Leakage trust](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/eyadstein/leaklens/main/badge.json)](#trust-score-badge)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## Detects
-- Target leakage (a single feature that almost perfectly predicts the label)
-- ID-like columns
-- Train/test row overlap
-- Temporal leakage (train data newer than test data)
-- Pipeline leaks in `.py` and `.ipynb`: scaler/encoder/imputer fitted before the split, SMOTE before the split, transformers fitted on test/validation data
+**Catch data leakage before it fools you.** Most "99% accuracy" models are leaking. LeakLens audits both your **data** and your **code**, then proves what survives by training three model families on a leak-free pipeline.
 
-## Model arena
-Auto-drops leaking and ID columns, then trains three model families (linear, gradient-boosted trees, neural net) inside leak-safe pipelines. Every run is tracked in a local MLflow store (SQLite) and the winner is saved to `models/best.joblib`. Use `--time` for a temporal split.
+## What it catches
+| Where | Leak |
+|---|---|
+| Data | Target leakage (a single feature that almost perfectly predicts the label), ID-like columns, train/test row overlap, temporal leakage |
+| Code (`.py`, `.ipynb`) | Scaler/encoder/imputer fitted before the split, SMOTE before the split, transformers fitted on test/validation data |
 
-## REST API and UI
+Every audit returns a 0-100 trust score. The CLI exits with code 1 on a high-severity leak, so it gates CI.
+
+## Demo
+
+$ leaklens demo.csv --target is_fraud --arena
+LeakLens trust score: 50/100
+[HIGH] target_leakage :: chargeback_flag :: alone predicts target (roc_auc=1.000)
+[MEDIUM] id_like :: txn_id :: 100.0% unique values; likely an identifier
+
+Arena ranked by pr_auc (auto-dropped: chargeback_flag, txn_id)
+model roc_auc pr_auc best_f1
+neural_net 0.8374 0.4219 0.4353
+linear 0.8410 0.4215 0.4304
+tree_ensemble 0.8242 0.3562 0.4103
+
+A leaked column makes accuracy look perfect. LeakLens drops it and shows the honest numbers.
+
+## Quick start
 
 pip install -e “.[dev,app]”
-uvicorn leaklens.api:app --port 8000 # docs at http://localhost:8000/docs
-streamlit run leaklens/ui.py
-
-Endpoints: `GET /health`, `POST /audit` (CSV upload + target), `POST /scan` (Python source), `POST /predict` (rows scored by the saved best model).
-
-## CLI quick start
-
 leaklens train.csv --target label --test test.csv --time date
 leaklens --scan notebooks/
 python examples/make_demo.py
 leaklens demo.csv --target is_fraud --arena
 mlflow ui --backend-store-uri sqlite:///mlflow.db
 
-Exit code is 1 when a high-severity leak is found, so it works in CI.
+
+## Model arena
+Auto-drops leaking and ID columns, then trains linear, gradient-boosted tree and neural-net models inside leak-safe pipelines (imputation, scaling and encoding are fitted on training data only). Runs are tracked in local MLflow (SQLite) and the winner is saved to `models/best.joblib`. Add `--time COL` for a temporal split.
+
+## API and UI
+
+uvicorn leaklens.api:app --port 8000 # docs at /docs
+streamlit run leaklens/ui.py
+
+Endpoints: `GET /health`, `POST /audit`, `POST /scan`, `POST /predict`.
+
+## Docker
+
+docker compose up --build
+
+API on http://localhost:8000/docs, UI on http://localhost:8501.
+
+## GitHub Action
+```yaml
+- uses: actions/checkout@v4
+- uses: eyadstein/leaklens@main
+  with:
+    path: notebooks
+```
+
+## Trust score badge
+
+leaklens --scan . --badge badge.json
+
+Commit `badge.json`, then point a shields.io endpoint badge at its raw URL (as at the top of this file).
+
+## Architecture
+```mermaid
+flowchart LR
+  A[CSV / notebooks] --> B[Data audit + leakage detectors]
+  A --> C[Static code scanner]
+  B --> D[Trust score]
+  C --> D
+  B --> E[Model arena + MLflow]
+  E --> F[best.joblib]
+  F --> G[FastAPI /predict]
+  D --> H[CLI / Streamlit / GitHub Action]
+```
 
 ## Roadmap
-- [x] Core detectors + CLI
-- [x] Static scanner for notebooks/scripts
-- [x] Model arena with MLflow
-- [x] FastAPI + Streamlit UI
-- [ ] Docker, GitHub Action, trust-score badge
+- [x] Core detectors, static scanner, model arena, API, UI
+- [x] Docker, GitHub Action, badge, CI
+- [ ] Group/entity leakage detector
+- [ ] PyPI release
+
+MIT licensed.

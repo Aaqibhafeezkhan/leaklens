@@ -22,6 +22,7 @@ def main(argv=None) -> int:
     p.add_argument("--out", default="models")
     p.add_argument("--tracking-uri", default="sqlite:///mlflow.db")
     p.add_argument("--json", action="store_true")
+    p.add_argument("--badge", help="write a shields.io endpoint JSON with the trust score")
     a = p.parse_args(argv)
     if not a.train and not a.scan:
         p.error("give a CSV and/or --scan PATH")
@@ -49,6 +50,11 @@ def main(argv=None) -> int:
     if a.scan:
         fs += scan_path(a.scan)
     rep = {"trust_score": score(fs), **rep, "findings": [f.to_dict() for f in fs]}
+    if a.badge:
+        s = rep["trust_score"]
+        col = "brightgreen" if s >= 85 else "yellow" if s >= 60 else "red"
+        with open(a.badge, "w", encoding="utf-8") as fh:
+            json.dump({"schemaVersion": 1, "label": "leakage trust", "message": f"{s}/100", "color": col}, fh)
     if a.json:
         print(json.dumps(rep, indent=2))
     else:
