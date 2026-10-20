@@ -6,6 +6,8 @@
 
 **Catch data leakage before it fools you.** Most "99% accuracy" models are leaking. LeakLens audits both your **data** and your **code**, then proves what survives by training three model families on a leak-free pipeline.
 
+**[Live demo report](https://eyadstein.github.io/leaklens/)**
+
 ## What it catches
 | Where | Leak |
 |---|---|
