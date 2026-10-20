@@ -111,4 +111,7 @@ flowchart LR
 - [x] Group/entity leakage detector
 - [x] PyPI packaging + release workflow (PyPI name `leaklens-ml`, command stays `leaklens`; create a GitHub release to publish)
 
+## Contributing
+See [CONTRIBUTING.md](CONTRIBUTING.md). Starter tasks are labeled good first issue.
+
 MIT licensed.
