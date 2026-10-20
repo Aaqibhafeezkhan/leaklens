@@ -97,6 +97,6 @@ flowchart LR
 - [x] Core detectors, static scanner, model arena, API, UI
 - [x] Docker, GitHub Action, badge, CI
 - [x] Group/entity leakage detector
-- [x] PyPI packaging + release workflow (publish by creating a GitHub release)
+- [x] PyPI packaging + release workflow (PyPI name `leaklens-ml`, command stays `leaklens`; create a GitHub release to publish)
 
 MIT licensed.

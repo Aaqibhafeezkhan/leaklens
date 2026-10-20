@@ -1,18 +1,18 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "leaklens"
+name = "leaklens-ml"
 version = "0.4.0"
 description = "Audit datasets and ML pipelines for data leakage"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 authors = [{name = "Eyad"}]
 keywords = ["data-leakage", "machine-learning", "mlops", "data-science", "scikit-learn", "static-analysis"]
 classifiers = [
   "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: MIT License",
+
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
