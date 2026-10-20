@@ -29,6 +29,10 @@ tree_ensemble 0.8242 0.3562 0.4103
 
 A leaked column makes accuracy look perfect. LeakLens drops it and shows the honest numbers.
 
+## Install
+
+pip install leaklens-ml
+
 ## Quick start
 
 pip install -e “.[dev,app]”
