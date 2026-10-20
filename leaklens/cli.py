@@ -23,6 +23,7 @@ def main(argv=None) -> int:
     p.add_argument("--out", default="models")
     p.add_argument("--tracking-uri", default="sqlite:///mlflow.db")
     p.add_argument("--json", action="store_true")
+    p.add_argument("--html", help="write a shareable single-file HTML report")
     p.add_argument("--badge", help="write a shields.io endpoint JSON with the trust score")
     a = p.parse_args(argv)
     if not a.train and not a.scan:
@@ -56,6 +57,10 @@ def main(argv=None) -> int:
         for s in a.scan:
             fs += scan_path(s)
     rep = {"trust_score": score(fs), **rep, "findings": [f.to_dict() for f in fs]}
+    if a.html:
+        from .report import render
+        with open(a.html, "w", encoding="utf-8") as fh:
+            fh.write(render(rep))
     if a.badge:
         s = rep["trust_score"]
         col = "brightgreen" if s >= 85 else "yellow" if s >= 60 else "red"

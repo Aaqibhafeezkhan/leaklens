@@ -68,6 +68,12 @@ API on http://localhost:8000/docs, UI on http://localhost:8501.
     path: notebooks
 ```
 
+## HTML report
+
+leaklens demo.csv --target is_fraud --arena --html report.html
+
+A single self-contained file with the trust score, findings and arena table. Easy to attach to a PR or share with your team.
+
 ## Pre-commit hook
 ```yaml
 repos:
