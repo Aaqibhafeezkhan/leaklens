@@ -9,3 +9,5 @@ models/
 *.csv
 dist/
 build/
+
+LAUNCH.txt
