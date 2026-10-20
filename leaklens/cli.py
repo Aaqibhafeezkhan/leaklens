@@ -6,7 +6,7 @@ import json
 import pandas as pd
 
 from .audit import audit
-from .leakage import scan, score, split_overlap, temporal_overlap
+from .leakage import group_overlap, group_risk, scan, score, split_overlap, temporal_overlap
 from .scanner import scan_path
 
 
@@ -16,6 +16,7 @@ def main(argv=None) -> int:
     p.add_argument("--target")
     p.add_argument("--test")
     p.add_argument("--time")
+    p.add_argument("--group", help="entity column (patient, customer...) to check for group leakage")
     p.add_argument("--threshold", type=float, default=0.95)
     p.add_argument("--scan", help="file or folder of .py/.ipynb to scan for pipeline leaks")
     p.add_argument("--arena", action="store_true", help="compare 3 model families, tracked in MLflow")
@@ -39,6 +40,10 @@ def main(argv=None) -> int:
             fs += split_overlap(tr, te)
             if a.time:
                 fs += temporal_overlap(tr, te, a.time)
+        if a.group:
+            fs += group_risk(tr, a.group)
+            if a.test:
+                fs += group_overlap(tr, te, a.group)
         rep["audit"] = audit(tr, a.target)
         if a.arena:
             try:

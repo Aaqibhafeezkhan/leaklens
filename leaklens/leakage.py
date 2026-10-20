@@ -95,3 +95,24 @@ def scan(df, target, threshold=0.95):
 def score(findings) -> int:
     pen = {"high": 35, "medium": 15, "low": 5}
     return max(0, 100 - sum(pen.get(f.severity, 0) for f in findings))
+
+def group_risk(df, group_col):
+    if group_col not in df.columns:
+        return [Finding("low", "group_missing", group_col, "group column not found")]
+    sizes = df.groupby(group_col).size()
+    share = float(sizes[sizes > 1].sum() / max(len(df), 1))
+    if share < 0.5:
+        return []
+    return [Finding("medium", "group_leakage_risk", group_col,
+                    f"{share:.0%} of rows share a {group_col} with other rows; a random split leaks entities, split by group")]
+
+
+def group_overlap(train, test, group_col):
+    if group_col not in train.columns or group_col not in test.columns:
+        return []
+    shared = set(train[group_col].dropna()) & set(test[group_col].dropna())
+    if not shared:
+        return []
+    n = int(test[group_col].isin(shared).sum())
+    return [Finding("high", "group_overlap", group_col,
+                    f"{len(shared)} {group_col} values in both splits ({n / len(test):.1%} of test rows)")]
