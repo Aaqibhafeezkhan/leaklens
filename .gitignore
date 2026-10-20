@@ -7,3 +7,5 @@ mlflow.db
 models/
 *.joblib
 *.csv
+dist/
+build/

@@ -64,6 +64,16 @@ API on http://localhost:8000/docs, UI on http://localhost:8501.
     path: notebooks
 ```
 
+## Pre-commit hook
+```yaml
+repos:
+  - repo: https://github.com/eyadstein/leaklens
+    rev: main
+    hooks:
+      - id: leaklens
+```
+Blocks a commit when a notebook or script fits a transformer before the split.
+
 ## Trust score badge
 
 leaklens --scan . --badge badge.json
@@ -87,6 +97,6 @@ flowchart LR
 - [x] Core detectors, static scanner, model arena, API, UI
 - [x] Docker, GitHub Action, badge, CI
 - [x] Group/entity leakage detector
-- [ ] PyPI release
+- [x] PyPI packaging + release workflow (publish by creating a GitHub release)
 
 MIT licensed.

@@ -18,7 +18,7 @@ def main(argv=None) -> int:
     p.add_argument("--time")
     p.add_argument("--group", help="entity column (patient, customer...) to check for group leakage")
     p.add_argument("--threshold", type=float, default=0.95)
-    p.add_argument("--scan", help="file or folder of .py/.ipynb to scan for pipeline leaks")
+    p.add_argument("--scan", nargs="+", help="file or folder of .py/.ipynb to scan for pipeline leaks")
     p.add_argument("--arena", action="store_true", help="compare 3 model families, tracked in MLflow")
     p.add_argument("--out", default="models")
     p.add_argument("--tracking-uri", default="sqlite:///mlflow.db")
@@ -53,7 +53,8 @@ def main(argv=None) -> int:
             res = run(tr, a.target, a.time, a.out, a.tracking_uri)
             rep["arena"] = res.round(4).to_dict("records")
     if a.scan:
-        fs += scan_path(a.scan)
+        for s in a.scan:
+            fs += scan_path(s)
     rep = {"trust_score": score(fs), **rep, "findings": [f.to_dict() for f in fs]}
     if a.badge:
         s = rep["trust_score"]

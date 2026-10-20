@@ -1,0 +1,6 @@
+- id: leaklens
+  name: leaklens
+  description: Scan notebooks and scripts for ML data leakage
+  entry: leaklens --scan
+  language: python
+  types_or: [python, jupyter]
