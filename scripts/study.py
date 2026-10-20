@@ -1,6 +1,6 @@
 """Scan public GitHub notebooks and report how many trip LeakLens's pipeline-leak rules.
 
-Usage: python scripts/study.py [per_query_limit]   (needs the gh CLI, logged in)
+Usage: python scripts/study.py [pages_per_query]   (needs the gh CLI, logged in)
 """
 import collections
 import concurrent.futures as cf
@@ -18,19 +18,34 @@ from leaklens.scanner import scan_file
 
 QUERIES = [
     "StandardScaler fit_transform",
-    "SMOTE fit_resample",
     "MinMaxScaler fit_transform",
     "RobustScaler fit_transform",
+    "SMOTE fit_resample",
+    "RandomOverSampler fit_resample",
+    "SimpleImputer fit_transform",
+    "OneHotEncoder fit_transform",
+    "LabelEncoder fit_transform",
+    "PCA fit_transform",
+    "TfidfVectorizer fit_transform",
+    "CountVectorizer fit_transform",
+    "SelectKBest fit_transform",
 ]
 
 
-def search(q, limit):
-    r = subprocess.run(["gh", "search", "code", q, "--extension", "ipynb", "--limit", str(limit),
-                        "--json", "path,repository"], capture_output=True, text=True)
-    if r.returncode != 0:
-        print("search failed:", r.stderr.strip()[:200])
-        return []
-    return json.loads(r.stdout or "[]")
+def search(q, pages):
+    out = []
+    for page in range(1, pages + 1):
+        r = subprocess.run(["gh", "api", "-X", "GET", "search/code", "-f", f"q={q} extension:ipynb",
+                            "-f", "per_page=100", "-f", f"page={page}"], capture_output=True, text=True, encoding="utf-8", errors="replace")
+        time.sleep(7)
+        if r.returncode != 0:
+            print("search failed:", r.stderr.strip()[:160])
+            break
+        items = json.loads(r.stdout or "{}").get("items", [])
+        out += [{"path": i["path"], "repository": {"nameWithOwner": i["repository"]["full_name"]}} for i in items]
+        if len(items) < 100:
+            break
+    return out
 
 
 def fetch(item):
@@ -43,18 +58,17 @@ def fetch(item):
         return item, None
 
 
-def main(n=100):
+def main(pages=3):
     seen, items = set(), []
     for q in QUERIES:
-        res = search(q, n)
+        res = search(q, pages)
         print(q, len(res))
         for it in res:
             k = (it["repository"]["nameWithOwner"], it["path"])
             if k not in seen:
                 seen.add(k)
                 items.append(it)
-        time.sleep(7)
-    print(len(items), "notebooks found")
+    print(len(items), "unique notebooks found")
     kinds = collections.Counter()
     scanned = flagged = 0
     with tempfile.TemporaryDirectory() as td, cf.ThreadPoolExecutor(8) as ex:
@@ -84,15 +98,15 @@ def main(n=100):
         "",
         f"- Public notebooks with a train/test split scanned: **{scanned}**",
         f"- Flagged with at least one high-severity pipeline leak: **{flagged} ({pct:.0f}%)**",
-        "",
-        "| Pattern | Notebooks |",
-        "|---|---|",
     ]
+    if scanned < 100:
+        lines.append("- Small sample: treat the percentage as anecdotal.")
+    lines += ["", "| Pattern | Notebooks |", "|---|---|"]
     lines += [f"| {k} | {v} |" for k, v in kinds.most_common()]
     lines += [
         "",
         "## Method and caveats",
-        "Notebooks come from GitHub code search for common scikit-learn preprocessing and split calls, "
+        "Notebooks come from GitHub code search for common scikit-learn preprocessing calls, "
         "so the sample is not random. The scanner is a static heuristic: it can flag code that is fine "
         "(for example a fit on a different, already-split frame) and miss leaks it cannot see. "
         "Treat the numbers as a rough prevalence signal, not a verdict on any notebook. "
@@ -106,4 +120,4 @@ def main(n=100):
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(int(sys.argv[1]) if len(sys.argv) > 1 else 100))
+    raise SystemExit(main(int(sys.argv[1]) if len(sys.argv) > 1 else 3))
