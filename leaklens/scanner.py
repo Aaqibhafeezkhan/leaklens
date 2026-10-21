@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import json
 import re
+import warnings
 from pathlib import Path
 
 from .leakage import Finding
@@ -11,6 +12,7 @@ FIT = {"fit", "fit_transform", "fit_resample"}
 HINTS = ("Scaler", "Imputer", "Encoder", "PCA", "SMOTE", "ADASYN", "Vectorizer", "Normalizer",
          "Transformer", "Selector", "RandomOverSampler", "RandomUnderSampler", "Binarizer", "Discretizer")
 RESAMPLE = ("SMOTE", "ADASYN", "RandomOverSampler", "RandomUnderSampler")
+BENIGN = ("LabelEncoder", "OrdinalEncoder", "OneHotEncoder")
 EVAL = re.compile(r"(^|[_\W])(test|val|valid|validation|eval)([_\W]|$)", re.I)
 SKIP = {".venv", "venv", ".git", "node_modules", "site-packages", "__pycache__"}
 
@@ -26,7 +28,9 @@ def _name(c: ast.Call) -> str:
 
 def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
     try:
-        tree = ast.parse(src)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            tree = ast.parse(src)
     except SyntaxError as e:
         return [Finding("low", "parse_error", label, str(e))]
     ctor, calls = {}, []
@@ -70,7 +74,10 @@ def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
                                f"{cls}.{f.attr}({args}) learns from evaluation data"))
         elif first is not None and c.lineno < first:
             kind = "resample_before_split" if any(r in cls for r in RESAMPLE) else "preprocess_before_split"
-            out.append(Finding("high", kind, loc(c.lineno),
+            sev = "low" if any(b in cls for b in BENIGN) else "high"
+            if sev == "low":
+                kind = "encoder_before_split"
+            out.append(Finding(sev, kind, loc(c.lineno),
                                f"{cls}.{f.attr}() runs before the split at {loc(first)}"))
     return out
 

@@ -70,6 +70,7 @@ def main(pages=3):
                 items.append(it)
     print(len(items), "unique notebooks found")
     kinds = collections.Counter()
+    flagged_items = []
     scanned = flagged = 0
     with tempfile.TemporaryDirectory() as td, cf.ThreadPoolExecutor(8) as ex:
         for i, (it, data) in enumerate(ex.map(fetch, items)):
@@ -86,10 +87,16 @@ def main(pages=3):
             hi = {f.kind for f in fs if f.severity == "high"}
             if hi:
                 flagged += 1
+                flagged_items.append((it, [f.column + " " + f.detail for f in fs if f.severity == "high"]))
                 kinds.update(hi)
     if not scanned:
         print("nothing scanned (check gh auth / network)")
         return 1
+    import random
+    random.seed(0)
+    with open("study_sample.txt", "w", encoding="utf-8") as fh:
+        for it, d in random.sample(flagged_items, min(25, len(flagged_items))):
+            fh.write("https://github.com/" + it["repository"]["nameWithOwner"] + "/blob/HEAD/" + it["path"] + "\n  " + "\n  ".join(d) + "\n")
     pct = 100 * flagged / scanned
     lines = [
         "# Leakage study",
