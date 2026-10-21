@@ -25,6 +25,7 @@ def main(argv=None) -> int:
     p.add_argument("--json", action="store_true")
     p.add_argument("--html", help="write a shareable single-file HTML report")
     p.add_argument("--badge", help="write a shields.io endpoint JSON with the trust score")
+    p.add_argument("--fail-under", type=float, help="exit with code 1 if trust score is below N")
     a = p.parse_args(argv)
     if not a.train and not a.scan:
         p.error("give a CSV and/or --scan PATH")
@@ -77,4 +78,4 @@ def main(argv=None) -> int:
         if res is not None:
             print(f"\nArena ranked by {res.attrs['primary']} (auto-dropped: {', '.join(map(str, res.attrs['dropped'])) or 'none'})")
             print(res.round(4).to_string(index=False))
-    return 1 if any(f.severity == "high" for f in fs) else 0
+    return 1 if any(f.severity == "high" for f in fs) or (a.fail_under is not None and rep["trust_score"] < a.fail_under) else 0
