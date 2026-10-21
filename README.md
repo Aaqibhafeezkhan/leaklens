@@ -41,6 +41,7 @@ pip install -e “.[dev,app]”
 leaklens train.csv --target label --test test.csv --time date
 leaklens --scan notebooks/
 leaklens train.csv --target label --test test.csv --group patient_id
+leaklens train.parquet --target label --fail-under 80   # Parquet input (pip install leaklens-ml[parquet]); CI gate on trust score
 python examples/make_demo.py
 leaklens demo.csv --target is_fraud --arena
 mlflow ui --backend-store-uri sqlite:///mlflow.db
@@ -116,5 +117,8 @@ How common are these leaks in public notebooks? See [docs/STUDY.md](docs/STUDY.m
 
 ## Contributing
 See [CONTRIBUTING.md](CONTRIBUTING.md). Starter tasks are labeled good first issue.
+
+## Contributors
+Thanks to @jay23606 (Parquet input) and @slopggobblercobbler81 (--fail-under).
 
 MIT licensed.
