@@ -35,7 +35,11 @@ def health():
 @app.post("/audit")
 async def audit_csv(file: UploadFile = File(...), target: str = Form(...), threshold: float = Form(0.95)):
     try:
-        df = pd.read_csv(io.BytesIO(await file.read()))
+        data = io.BytesIO(await file.read())
+        if Path(file.filename or "").suffix.lower() == ".parquet":
+            df = pd.read_parquet(data)
+        else:
+            df = pd.read_csv(data)
     except Exception as e:
         raise HTTPException(400, f"bad CSV: {e}")
     if target not in df.columns:

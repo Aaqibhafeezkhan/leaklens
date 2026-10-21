@@ -10,6 +10,12 @@ from .leakage import group_overlap, group_risk, scan, score, split_overlap, temp
 from .scanner import scan_path
 
 
+def _read_dataset(path):
+    if str(path).lower().endswith(".parquet"):
+        return pd.read_parquet(path)
+    return pd.read_csv(path)
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="leaklens", description="Audit datasets and ML code for leakage")
     p.add_argument("train", nargs="?")
@@ -35,10 +41,10 @@ def main(argv=None) -> int:
         p.error("--arena needs a CSV")
     fs, rep, res = [], {}, None
     if a.train:
-        tr = pd.read_csv(a.train)
+        tr = _read_dataset(a.train)
         fs += scan(tr, a.target, a.threshold)
         if a.test:
-            te = pd.read_csv(a.test)
+            te = _read_dataset(a.test)
             fs += split_overlap(tr, te)
             if a.time:
                 fs += temporal_overlap(tr, te, a.time)
