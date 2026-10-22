@@ -1,0 +1,17 @@
+FIXES = {
+    "preprocess_before_split": "Split first, then fit on the training part only. Wrap the steps in sklearn.pipeline.Pipeline and fit/cross-validate the pipeline.",
+    "transformer_before_split": "Split first, then fit the transformer on the training part only (put it inside a Pipeline).",
+    "resample_before_split": "Resample only the training fold: imblearn.pipeline.Pipeline([('smote', SMOTE()), ('clf', model)]).",
+    "fit_on_eval_data": "Fit on X_train, then call .transform() (not .fit_transform()) on validation/test data.",
+    "encoder_before_split": "Usually harmless, but fit encoders on training data and use handle_unknown='ignore' to be safe.",
+    "target_leakage": "Drop the column or confirm it is known at prediction time; on its own it predicts the target.",
+    "id_like": "Drop identifier columns; they let models memorize rows instead of learning patterns.",
+    "split_overlap": "Deduplicate before splitting, or split by group so the same row cannot land on both sides.",
+    "temporal_leakage": "Split by time: train on earlier data and test on later data.",
+    "group_overlap": "Split by entity with GroupShuffleSplit or GroupKFold so no entity appears in both splits.",
+    "group_leakage_risk": "Split by entity with GroupShuffleSplit or GroupKFold instead of a random split.",
+}
+
+
+def advice(kind: str) -> str:
+    return FIXES.get(kind, "")

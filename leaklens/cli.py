@@ -7,6 +7,7 @@ import pandas as pd
 
 from .audit import audit
 from .leakage import group_overlap, group_risk, scan, score, split_overlap, temporal_overlap
+from .fixes import advice
 from .scanner import scan_path
 
 
@@ -29,6 +30,7 @@ def main(argv=None) -> int:
     p.add_argument("--out", default="models")
     p.add_argument("--tracking-uri", default="sqlite:///mlflow.db")
     p.add_argument("--json", action="store_true")
+    p.add_argument("--explain", action="store_true", help="print a suggested fix under each finding")
     p.add_argument("--html", help="write a shareable single-file HTML report")
     p.add_argument("--badge", help="write a shields.io endpoint JSON with the trust score")
     p.add_argument("--fail-under", type=float, help="exit with code 1 if trust score is below N")
@@ -79,6 +81,8 @@ def main(argv=None) -> int:
         print(f"LeakLens trust score: {rep['trust_score']}/100")
         for f in fs:
             print(f"[{f.severity.upper()}] {f.kind} :: {f.column} :: {f.detail}")
+            if a.explain and advice(f.kind):
+                print(f"    fix: {advice(f.kind)}")
         if not fs:
             print("No leakage found.")
         if res is not None:
