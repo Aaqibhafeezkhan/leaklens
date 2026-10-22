@@ -108,6 +108,8 @@ flowchart LR
 ```
 
 ## Roadmap
+Full plan with phases and exit criteria: [ROADMAP.md](ROADMAP.md). Open tasks are in [Issues](https://github.com/eyadstein/leaklens/issues).
+
 - [x] Core detectors, static scanner, model arena, API, UI
 - [x] Docker, GitHub Action, badge, CI
 - [x] Group/entity leakage detector
