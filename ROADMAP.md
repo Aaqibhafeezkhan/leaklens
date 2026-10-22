@@ -65,6 +65,6 @@ Exit: regular outside contributors and issues from real users.
 
 ## Phase 9: Sustainability
 1. Governance and a deprecation policy; semantic versioning.
-2. Security: SECURITY.md (done), Dependabot (done), signed releases through PyPI trusted publishing (done), SBOM on release.
+2. Security: SECURITY.md (done), Dependabot security alerts (done), signed releases through PyPI trusted publishing (done), SBOM on release.
 3. Maintainer rotation: invite repeat contributors to triage.
 Exit: the project keeps running if the founder steps away for a month.

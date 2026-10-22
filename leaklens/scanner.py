@@ -10,7 +10,8 @@ from .leakage import Finding
 
 FIT = {"fit", "fit_transform", "fit_resample"}
 HINTS = ("Scaler", "Imputer", "Encoder", "PCA", "SMOTE", "ADASYN", "Vectorizer", "Normalizer",
-         "Transformer", "Selector", "SelectK", "SelectPercentile", "SelectFromModel", "RandomOverSampler", "RandomUnderSampler", "Binarizer", "Discretizer")
+         "Transformer", "Selector", "SelectK", "SelectPercentile", "SelectFromModel",
+         "RandomOverSampler", "RandomUnderSampler", "Binarizer", "Discretizer")
 RESAMPLE = ("SMOTE", "ADASYN", "RandomOverSampler", "RandomUnderSampler")
 BENIGN = ("LabelEncoder", "OrdinalEncoder", "OneHotEncoder")
 UNSURE = ("ColumnTransformer",)
@@ -36,6 +37,32 @@ def _sev(cls: str) -> str:
     return "high"
 
 
+def _all_names(expr) -> set:
+    return {n.id for n in ast.walk(expr) if isinstance(n, ast.Name)}
+
+
+def _names(expr) -> set:
+    """Names in an expression, or none if it indexes (X[idx] is usually a partition, not the full data)."""
+    if any(isinstance(n, ast.Subscript) for n in ast.walk(expr)):
+        return set()
+    return _all_names(expr)
+
+
+def _tnames(t) -> set:
+    if isinstance(t, ast.Name):
+        return {t.id}
+    if isinstance(t, (ast.Tuple, ast.List)):
+        out = set()
+        for e in t.elts:
+            out |= _tnames(e)
+        return out
+    return set()
+
+
+def _is_tts(v) -> bool:
+    return isinstance(v, ast.Call) and _name(v) == "train_test_split"
+
+
 def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
     try:
         with warnings.catch_warnings():
@@ -43,18 +70,21 @@ def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
             tree = ast.parse(src)
     except SyntaxError as e:
         return [Finding("low", "parse_error", label, str(e))]
-    ctor, calls, funcs = {}, [], set()
+    ctor, calls, funcs, assigns = {}, [], set(), []
     for n in ast.walk(tree):
-        if isinstance(n, ast.Assign) and isinstance(n.value, ast.Call):
-            for t in n.targets:
-                if isinstance(t, ast.Name):
-                    ctor[t.id] = _name(n.value)
+        if isinstance(n, ast.Assign):
+            assigns.append(n)
+            if isinstance(n.value, ast.Call):
+                for t in n.targets:
+                    if isinstance(t, ast.Name):
+                        ctor[t.id] = _name(n.value)
         elif isinstance(n, ast.Call):
             calls.append(n)
         elif isinstance(n, ast.ImportFrom) and (n.module or "").startswith("sklearn.preprocessing"):
             for al in n.names:
                 if al.name in FUNCS:
                     funcs.add(al.asname or al.name)
+    assigns.sort(key=lambda n: n.lineno)
 
     def is_split(c):
         if _name(c) == "train_test_split":
@@ -65,6 +95,34 @@ def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
 
     splits = [c.lineno for c in calls if is_split(c)]
     first = min(splits) if splits else None
+
+    # dataflow: which names hold the FULL dataset that train_test_split divides?
+    tts = sorted((c for c in calls if _name(c) == "train_test_split"), key=lambda c: c.lineno)
+    tts_line, full = None, set()
+    if tts:
+        tts_line = tts[0].lineno
+        for a in tts[0].args:
+            full |= _all_names(a)
+        defs = {}
+        for a in assigns:
+            if a.lineno < tts_line and not _is_tts(a.value):
+                for t in a.targets:
+                    for nm in _tnames(t):
+                        defs.setdefault(nm, []).append(a.value)
+        work = list(full)
+        while work:
+            nm = work.pop()
+            for v in defs.get(nm, []):
+                for x in _all_names(v):
+                    if x in defs and x not in full:
+                        full.add(x)
+                        work.append(x)
+        for a in assigns:
+            if _is_tts(a.value):
+                continue
+            if _names(a.value) & full:
+                for t in a.targets:
+                    full |= _tnames(t)
 
     def loc(line):
         if cells:
@@ -79,9 +137,16 @@ def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
         f = c.func
         if isinstance(f, ast.Name) and f.id in funcs:
             cls, call = f.id, f.id
-        elif (isinstance(f, ast.Attribute) and f.attr in FIT and isinstance(f.value, ast.Name)
-              and any(h in ctor.get(f.value.id, "") for h in HINTS)):
-            cls = ctor[f.value.id]
+        elif isinstance(f, ast.Attribute) and f.attr in FIT:
+            b = f.value
+            if isinstance(b, ast.Name):
+                cls = ctor.get(b.id, "")
+            elif isinstance(b, ast.Call):
+                cls = _name(b)
+            else:
+                cls = ""
+            if not any(h in cls for h in HINTS):
+                continue
             call = f"{cls}.{f.attr}"
         else:
             continue
@@ -99,6 +164,10 @@ def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
             else:
                 kind = "preprocess_before_split"
             out.append(Finding(_sev(cls), kind, loc(c.lineno), f"{call}() runs before the split at {loc(first)}"))
+        elif tts_line is not None and c.lineno > tts_line and any(_names(a) & full for a in c.args):
+            out.append(Finding("medium", "fit_on_full_data", loc(c.lineno),
+                               f"{call}({args}) fits on the full dataset after the split at {loc(tts_line)}; "
+                               "fine only for a final refit"))
     return out
 
 

@@ -13,7 +13,7 @@
 | Where | Leak |
 |---|---|
 | Data | Target leakage (a single feature that almost perfectly predicts the label), ID-like columns, train/test row overlap, temporal leakage, entity/group overlap (`--group COL`) |
-| Code (`.py`, `.ipynb`) | Scaler/encoder/imputer fitted before the split, SMOTE before the split, transformers fitted on test/validation data |
+| Code (`.py`, `.ipynb`) | Scaler/encoder/imputer fitted before the split, SMOTE before the split, transformers fitted on test/validation data or on the full dataset after the split, chained calls like `StandardScaler().fit_transform(X)` |
 
 Every audit returns a 0-100 trust score. The CLI exits with code 1 on a high-severity leak, so it gates CI.
 
@@ -41,6 +41,7 @@ pip install leaklens-ml
 pip install -e “.[dev,app]”
 leaklens train.csv --target label --test test.csv --time date
 leaklens --scan notebooks/ --explain   # prints a suggested fix under each finding
+leaklens --scan . --sarif leaklens.sarif   # for GitHub code scanning
 leaklens train.csv --target label --test test.csv --group patient_id
 leaklens train.parquet --target label --fail-under 80   # Parquet input (pip install leaklens-ml[parquet]); CI gate on trust score
 python examples/make_demo.py
@@ -77,6 +78,20 @@ API on http://localhost:8000/docs, UI on http://localhost:8501.
 leaklens demo.csv --target is_fraud --arena --html report.html
 
 A single self-contained file with the trust score, findings and arena table. Easy to attach to a PR or share with your team.
+
+## GitHub code scanning
+```yaml
+permissions:
+  security-events: write
+steps:
+  - uses: actions/checkout@v4
+  - run: pip install leaklens-ml
+  - run: leaklens --scan . --sarif leaklens.sarif || true
+  - uses: github/codeql-action/upload-sarif@v3
+    with:
+      sarif_file: leaklens.sarif
+```
+Findings then appear in the repository's Security tab and as PR annotations.
 
 ## Pre-commit hook
 ```yaml

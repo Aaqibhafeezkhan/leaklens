@@ -2,6 +2,7 @@ FIXES = {
     "preprocess_before_split": "Split first, then fit on the training part only. Wrap the steps in sklearn.pipeline.Pipeline and fit/cross-validate the pipeline.",
     "transformer_before_split": "Split first, then fit the transformer on the training part only (put it inside a Pipeline).",
     "resample_before_split": "Resample only the training fold: imblearn.pipeline.Pipeline([('smote', SMOTE()), ('clf', model)]).",
+    "fit_on_full_data": "Fit on the training split only (X_train). If this is the final refit after evaluation it is fine; otherwise put the steps in a Pipeline.",
     "fit_on_eval_data": "Fit on X_train, then call .transform() (not .fit_transform()) on validation/test data.",
     "encoder_before_split": "Usually harmless, but fit encoders on training data and use handle_unknown='ignore' to be safe.",
     "target_leakage": "Drop the column or confirm it is known at prediction time; on its own it predicts the target.",

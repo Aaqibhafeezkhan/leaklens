@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "LeakLens",
+          "version": "0.8.0",
+          "informationUri": "https://github.com/eyadstein/leaklens",
+          "rules": [
+            {
+              "id": "preprocess_before_split",
+              "name": "preprocess_before_split",
+              "shortDescription": {
+                "text": "preprocess before split"
+              },
+              "help": {
+                "text": "Split first, then fit on the training part only. Wrap the steps in sklearn.pipeline.Pipeline and fit/cross-validate the pipeline."
+              }
+            },
+            {
+              "id": "resample_before_split",
+              "name": "resample_before_split",
+              "shortDescription": {
+                "text": "resample before split"
+              },
+              "help": {
+                "text": "Resample only the training fold: imblearn.pipeline.Pipeline([('smote', SMOTE()), ('clf', model)])."
+              }
+            },
+            {
+              "id": "fit_on_full_data",
+              "name": "fit_on_full_data",
+              "shortDescription": {
+                "text": "fit on full data"
+              },
+              "help": {
+                "text": "Fit on the training split only (X_train). If this is the final refit after evaluation it is fine; otherwise put the steps in a Pipeline."
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "preprocess_before_split",
+          "level": "error",
+          "message": {
+            "text": "StandardScaler.fit_transform() runs before the split at examples\\bad_pipeline.py:9"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "examples/bad_pipeline.py"
+                },
+                "region": {
+                  "startLine": 6
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "resample_before_split",
+          "level": "error",
+          "message": {
+            "text": "SMOTE.fit_resample() runs before the split at examples\\bad_pipeline.py:9"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "examples/bad_pipeline.py"
+                },
+                "region": {
+                  "startLine": 8
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "fit_on_full_data",
+          "level": "warning",
+          "message": {
+            "text": "StandardScaler.fit_transform(X) fits on the full dataset after the split at examples\\leaky_after_split.py:4; fine only for a final refit"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "examples/leaky_after_split.py"
+                },
+                "region": {
+                  "startLine": 6
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

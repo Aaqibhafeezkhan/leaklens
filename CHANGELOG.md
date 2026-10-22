@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0
+- Dataflow tracking: names derived from the dataset passed to train_test_split are followed, so a transformer fitted on the full data after the split is reported (fit_on_full_data, medium)
+- Detects chained calls such as StandardScaler().fit_transform(X)
+- SARIF 2.1.0 output (`--sarif FILE`) for GitHub code scanning
+- Benchmark grows to 35 cases
+
 ## 0.7.1
 - Labeled scanner benchmark (`python -m leaklens.bench`, results in docs/BENCHMARK.md), run in CI
 - Scanner now recognizes SelectKBest / SelectPercentile / SelectFromModel fitted before the split
