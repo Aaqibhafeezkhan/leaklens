@@ -13,6 +13,8 @@ HINTS = ("Scaler", "Imputer", "Encoder", "PCA", "SMOTE", "ADASYN", "Vectorizer",
          "Transformer", "Selector", "RandomOverSampler", "RandomUnderSampler", "Binarizer", "Discretizer")
 RESAMPLE = ("SMOTE", "ADASYN", "RandomOverSampler", "RandomUnderSampler")
 BENIGN = ("LabelEncoder", "OrdinalEncoder", "OneHotEncoder")
+UNSURE = ("ColumnTransformer",)
+FUNCS = {"scale", "minmax_scale", "robust_scale", "maxabs_scale", "quantile_transform", "power_transform"}
 EVAL = re.compile(r"(^|[_\W])(test|val|valid|validation|eval)([_\W]|$)", re.I)
 SKIP = {".venv", "venv", ".git", "node_modules", "site-packages", "__pycache__"}
 
@@ -26,6 +28,14 @@ def _name(c: ast.Call) -> str:
     return ""
 
 
+def _sev(cls: str) -> str:
+    if any(b in cls for b in BENIGN):
+        return "low"
+    if any(u in cls for u in UNSURE):
+        return "medium"
+    return "high"
+
+
 def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
     try:
         with warnings.catch_warnings():
@@ -33,7 +43,7 @@ def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
             tree = ast.parse(src)
     except SyntaxError as e:
         return [Finding("low", "parse_error", label, str(e))]
-    ctor, calls = {}, []
+    ctor, calls, funcs = {}, [], set()
     for n in ast.walk(tree):
         if isinstance(n, ast.Assign) and isinstance(n.value, ast.Call):
             for t in n.targets:
@@ -41,6 +51,10 @@ def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
                     ctor[t.id] = _name(n.value)
         elif isinstance(n, ast.Call):
             calls.append(n)
+        elif isinstance(n, ast.ImportFrom) and (n.module or "").startswith("sklearn.preprocessing"):
+            for al in n.names:
+                if al.name in FUNCS:
+                    funcs.add(al.asname or al.name)
 
     def is_split(c):
         if _name(c) == "train_test_split":
@@ -63,22 +77,28 @@ def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
     out = []
     for c in sorted(calls, key=lambda x: (x.lineno, x.col_offset)):
         f = c.func
-        if not (isinstance(f, ast.Attribute) and f.attr in FIT and isinstance(f.value, ast.Name)):
-            continue
-        cls = ctor.get(f.value.id, "")
-        if not any(h in cls for h in HINTS):
+        if isinstance(f, ast.Name) and f.id in funcs:
+            cls, call = f.id, f.id
+        elif (isinstance(f, ast.Attribute) and f.attr in FIT and isinstance(f.value, ast.Name)
+              and any(h in ctor.get(f.value.id, "") for h in HINTS)):
+            cls = ctor[f.value.id]
+            call = f"{cls}.{f.attr}"
+        else:
             continue
         args = ", ".join(ast.unparse(a) for a in c.args)
         if EVAL.search(args):
-            out.append(Finding("high", "fit_on_eval_data", loc(c.lineno),
-                               f"{cls}.{f.attr}({args}) learns from evaluation data"))
+            sev = "medium" if any(b in cls for b in BENIGN) else "high"
+            out.append(Finding(sev, "fit_on_eval_data", loc(c.lineno), f"{call}({args}) learns from evaluation data"))
         elif first is not None and c.lineno < first:
-            kind = "resample_before_split" if any(r in cls for r in RESAMPLE) else "preprocess_before_split"
-            sev = "low" if any(b in cls for b in BENIGN) else "high"
-            if sev == "low":
+            if any(r in cls for r in RESAMPLE):
+                kind = "resample_before_split"
+            elif any(b in cls for b in BENIGN):
                 kind = "encoder_before_split"
-            out.append(Finding(sev, kind, loc(c.lineno),
-                               f"{cls}.{f.attr}() runs before the split at {loc(first)}"))
+            elif any(u in cls for u in UNSURE):
+                kind = "transformer_before_split"
+            else:
+                kind = "preprocess_before_split"
+            out.append(Finding(_sev(cls), kind, loc(c.lineno), f"{call}() runs before the split at {loc(first)}"))
     return out
 
 
