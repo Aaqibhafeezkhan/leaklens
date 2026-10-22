@@ -10,7 +10,7 @@ from .leakage import Finding
 
 FIT = {"fit", "fit_transform", "fit_resample"}
 HINTS = ("Scaler", "Imputer", "Encoder", "PCA", "SMOTE", "ADASYN", "Vectorizer", "Normalizer",
-         "Transformer", "Selector", "RandomOverSampler", "RandomUnderSampler", "Binarizer", "Discretizer")
+         "Transformer", "Selector", "SelectK", "SelectPercentile", "SelectFromModel", "RandomOverSampler", "RandomUnderSampler", "Binarizer", "Discretizer")
 RESAMPLE = ("SMOTE", "ADASYN", "RandomOverSampler", "RandomUnderSampler")
 BENIGN = ("LabelEncoder", "OrdinalEncoder", "OneHotEncoder")
 UNSURE = ("ColumnTransformer",)
