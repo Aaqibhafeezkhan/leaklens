@@ -82,7 +82,7 @@ def markdown(m: dict) -> str:
         "A snippet counts as flagged when the scanner reports a high or medium finding.\n\n"
         "| Metric | Value |\n|---|---|\n"
         f"| Precision | {m['precision']:.2f} |\n| Recall | {m['recall']:.2f} |\n| F1 | {m['f1']:.2f} |\n"
-        f"| True / false positives | {m['tp']} / {m['fp']} |\n| True / false negatives | {m['tn']} / {m['fn']} |\n\n"
+        f"| True / false positives | {m['tp']} / {m['fp']} |\n| True negatives / false negatives | {m['tn']} / {m['fn']} |\n\n"
         f"Misclassified:\n{miss}\n\n"
         "## Caveats\n"
         "The set is small, hand-written and partly shaped by the scanner's own rules, so it guards against "

@@ -8,7 +8,7 @@
 | Recall | 1.00 |
 | F1 | 1.00 |
 | True / false positives | 13 / 0 |
-| True / false negatives | 17 / 0 |
+| True negatives / false negatives | 17 / 0 |
 
 Misclassified:
 - none

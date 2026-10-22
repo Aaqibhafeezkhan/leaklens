@@ -17,3 +17,4 @@ jobs:
       - run: pip install -e ".[dev,app]"
       - run: pytest -q
       - run: leaklens --scan leaklens
+      - run: python -m leaklens.bench
