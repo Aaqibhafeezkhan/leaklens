@@ -113,7 +113,7 @@ flowchart LR
 - [x] PyPI packaging + release workflow (PyPI name `leaklens-ml`, command stays `leaklens`; create a GitHub release to publish)
 
 ## Leakage study
-How common are these leaks in public notebooks? See [docs/STUDY.md](docs/STUDY.md). Reproduce it with `python scripts/study.py` (needs the `gh` CLI).
+In a non-random sample of 1,725 public notebooks that split their data, **38%** fit a preprocessing step before the split or on test data (static heuristic, not a verdict on any notebook). Details and caveats: [docs/STUDY.md](docs/STUDY.md). Reproduce it with `python scripts/study.py` (needs the `gh` CLI).
 
 ## Contributing
 See [CONTRIBUTING.md](CONTRIBUTING.md). Starter tasks are labeled good first issue.
