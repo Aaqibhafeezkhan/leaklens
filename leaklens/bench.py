@@ -77,6 +77,13 @@ LOW_CASES: list[tuple[str, str, bool]] = [
 ]
 
 
+LOW_CASES += [
+    ("train_test_split shuffle=False is deterministic", SPLIT + "a = train_test_split(X, y, shuffle=False)\n", False),
+    ("ShuffleSplit without random_state", "from sklearn.model_selection import ShuffleSplit\nss = ShuffleSplit(5)\n", True),
+    ("ShuffleSplit with random_state", "from sklearn.model_selection import ShuffleSplit\nss = ShuffleSplit(5, random_state=1)\n", False),
+]
+
+
 def evaluate() -> dict:
     tp = fp = tn = fn = 0
     errors = []

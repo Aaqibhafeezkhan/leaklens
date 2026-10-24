@@ -18,7 +18,7 @@ UNSURE = ("ColumnTransformer",)
 # Splitters whose folds are random only when shuffle=True (fold order is deterministic without it).
 SHUFFLED_SPLITS = {"KFold", "StratifiedKFold", "StratifiedGroupKFold"}
 # Repeated splitters always shuffle, so a missing random_state always makes them non-reproducible.
-ALWAYS_SHUFFLED = {"RepeatedKFold", "RepeatedStratifiedKFold"}
+ALWAYS_SHUFFLED = {"RepeatedKFold", "RepeatedStratifiedKFold", "ShuffleSplit", "StratifiedShuffleSplit", "GroupShuffleSplit"}
 FUNCS = {"scale", "minmax_scale", "robust_scale", "maxabs_scale", "quantile_transform", "power_transform"}
 EVAL = re.compile(r"(^|[_\W])(test|val|valid|validation|eval)([_\W]|$)", re.I)
 SKIP = {".venv", "venv", ".git", "node_modules", "site-packages", "__pycache__"}
@@ -76,6 +76,12 @@ def _kw_true(c, name: str) -> bool:
 def _has_seed(c) -> bool:
     """random_state passed, or a **kwargs expansion that might carry it (assume it does)."""
     return any(kw.arg == "random_state" or kw.arg is None for kw in c.keywords)
+
+
+def _kw_false(c, name: str) -> bool:
+    """Whether a keyword argument is the literal False."""
+    return any(kw.arg == name and isinstance(kw.value, ast.Constant) and kw.value.value is False
+               for kw in c.keywords)
 
 
 def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
@@ -152,7 +158,7 @@ def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
         f = c.func
         nm = _name(c)
         # low severity: reproducibility - a random split nobody can rerun
-        if nm == "train_test_split" and not _has_seed(c):
+        if nm == "train_test_split" and not _has_seed(c) and not _kw_false(c, "shuffle"):
             out.append(Finding("low", "no_random_state", loc(c.lineno),
                                "train_test_split() without random_state: a different split on every run, so results are not reproducible"))
         elif nm in SHUFFLED_SPLITS and not _has_seed(c) and _kw_true(c, "shuffle"):

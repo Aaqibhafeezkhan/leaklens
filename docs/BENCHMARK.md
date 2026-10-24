@@ -10,7 +10,7 @@
 | True / false positives | 16 / 0 |
 | True negatives / false negatives | 19 / 0 |
 
-Low-severity reproducibility cases (issue #13): 5/5 correct, 0 misclassified.
+Low-severity reproducibility cases (issue #13): 8/8 correct, 0 misclassified.
 
 Misclassified:
 - none
