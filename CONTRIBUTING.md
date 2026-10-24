@@ -9,3 +9,5 @@
 New detectors belong in `leaklens/leakage.py` (data) or `leaklens/scanner.py` (code). Each one returns `Finding` objects with a severity of `high`, `medium` or `low`.
 
 Look for issues labeled **good first issue**.
+## Claiming an issue
+Comment on the issue to claim it. The first person to ask gets it assigned; others please pick another issue (or review the open PR). First-time contributors: one issue at a time. If an assigned issue has no activity for 7 days, a maintainer may offer it to someone else. Questions are welcome in the issue thread.
