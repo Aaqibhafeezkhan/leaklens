@@ -85,6 +85,12 @@ def _kw_false(c, name: str) -> bool:
 
 
 def scan_source(src: str, label: str = "<src>", cells=None) -> list[Finding]:
+    from .cvcheck import scan_cv
+
+    return _scan_core(src, label, cells) + scan_cv(src, label, cells)
+
+
+def _scan_core(src: str, label: str = "<src>", cells=None) -> list[Finding]:
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")

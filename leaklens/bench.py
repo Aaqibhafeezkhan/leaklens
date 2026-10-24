@@ -121,6 +121,17 @@ def evaluate() -> dict:
             "precision": prec, "recall": rec, "f1": f1, "errors": errors}
 
 
+_CV = "from sklearn.model_selection import cross_val_score, GridSearchCV\nfrom sklearn.preprocessing import StandardScaler\n"
+CASES += [
+    ("scaler fitted on all data then cross_val_score", _CV + "X = StandardScaler().fit_transform(X)\nscores = cross_val_score(model, X, y, cv=5)\n", True),
+    ("SMOTE on all data then cross_val_score", "from imblearn.over_sampling import SMOTE\nfrom sklearn.model_selection import cross_val_score\nX, y = SMOTE().fit_resample(X, y)\nscores = cross_val_score(model, X, y, cv=5)\n", True),
+    ("scaler on all data then GridSearchCV.fit", _CV + "sc = StandardScaler()\nXs = sc.fit_transform(X)\ngs = GridSearchCV(model, grid)\ngs.fit(Xs, y)\n", True),
+    ("pipeline in cross_val_score with raw X", _CV + "pipe = make_pipeline(StandardScaler(), model)\nscores = cross_val_score(pipe, X, y, cv=5)\n", False),
+    ("GridSearchCV over a pipeline with raw X", _CV + "gs = GridSearchCV(make_pipeline(StandardScaler(), model), grid)\ngs.fit(X, y)\n", False),
+    ("label-encoded target then cross_val_score", "from sklearn.preprocessing import LabelEncoder\nfrom sklearn.model_selection import cross_val_score\ny = LabelEncoder().fit_transform(y)\nscores = cross_val_score(model, X, y, cv=5)\n", False),
+]
+
+
 def markdown(m: dict) -> str:
     miss = "\n".join(f"- {e}" for e in m["errors"]) or "- none"
     return (

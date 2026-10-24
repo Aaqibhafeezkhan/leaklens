@@ -13,7 +13,7 @@
 | Where | Leak |
 |---|---|
 | Data | Target leakage (a single feature that almost perfectly predicts the label), ID-like columns, train/test row overlap, temporal leakage, entity/group overlap (`--group COL`) |
-| Code (`.py`, `.ipynb`) | Scaler/encoder/imputer fitted before the split, SMOTE before the split, transformers fitted on test/validation data or on the full dataset after the split, chained calls like `StandardScaler().fit_transform(X)` |
+| Code (`.py`, `.ipynb`) | Scaler/encoder/imputer fitted before the split, SMOTE before the split, transformers fitted on test/validation data or on the full dataset after the split, chained calls like `StandardScaler().fit_transform(X)`, preprocessing or resampling done before `cross_val_score` / `GridSearchCV` (`preprocess_outside_cv`) |
 
 Every audit returns a 0-100 trust score. The CLI exits with code 1 on a high-severity leak, so it gates CI.
 
@@ -38,7 +38,7 @@ pip install leaklens-ml
 
 ## Quick start
 
-pip install -e “.[dev,app]”
+pip install -e ".[dev,app]"
 leaklens train.csv --target label --test test.csv --time date
 leaklens --scan notebooks/ --explain   # prints a suggested fix under each finding
 leaklens --scan . --sarif leaklens.sarif   # for GitHub code scanning

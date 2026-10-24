@@ -3,6 +3,10 @@
 ## Unreleased
 - Excel, JSON and Feather input alongside CSV and Parquet, via the new `excel` and `feather` extras for the optional formats
 
+## 0.10.0
+- New detector: preprocessing or resampling applied to all rows before `cross_val_score` / `cross_validate` / `GridSearchCV` (`preprocess_outside_cv`, `resample_outside_cv`)
+- README: fixed curly quotes that broke copy-pasting `pip install` lines
+
 ## 0.9.0
 - Excel, JSON and Feather input via the `excel` / `feather` extras (thanks @tyza66)
 - Low-severity `no_random_state` finding for unseeded splits (thanks @rahul05ranjan); not raised for `shuffle=False`; ShuffleSplit family covered

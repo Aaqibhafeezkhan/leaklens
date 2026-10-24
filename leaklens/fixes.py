@@ -1,4 +1,6 @@
 FIXES = {
+    "preprocess_outside_cv": "Put the preprocessing inside a sklearn Pipeline (or make_pipeline) and pass the pipeline to cross_val_score / GridSearchCV so every fold fits it on its own training part.",
+    "resample_outside_cv": "Use imblearn.pipeline.Pipeline with the sampler as a step so resampling happens inside each training fold only.",
     "preprocess_before_split": "Split first, then fit on the training part only. Wrap the steps in sklearn.pipeline.Pipeline and fit/cross-validate the pipeline.",
     "transformer_before_split": "Split first, then fit the transformer on the training part only (put it inside a Pipeline).",
     "resample_before_split": "Resample only the training fold: imblearn.pipeline.Pipeline([('smote', SMOTE()), ('clf', model)]).",
