@@ -146,6 +146,6 @@ The code scanner is checked against a labeled regression benchmark on every CI r
 See [CONTRIBUTING.md](CONTRIBUTING.md). Starter tasks are labeled good first issue.
 
 ## Contributors
-Thanks to @jay23606 (Parquet input), @slopggobblercobbler81 (`--fail-under`), @tyza66 (Excel, JSON and Feather input) and @rahul05ranjan (`random_state` reproducibility check).
+Thanks to @jay23606 (Parquet input), @slopggobblercobbler81 (`--fail-under`), @tyza66 (Excel, JSON and Feather input), @rahul05ranjan (`random_state` reproducibility check), @have-you-tried-restarting (severity summary) and @rahul-jain-dev (`--version`).
 
 MIT licensed.
