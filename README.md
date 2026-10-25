@@ -136,6 +136,9 @@ Full plan with phases and exit criteria: [ROADMAP.md](ROADMAP.md). Open tasks ar
 ## Leakage study
 In a non-random sample of 1,725 public notebooks that split their data, **38%** fit a preprocessing step before the split or on test data (static heuristic, not a verdict on any notebook). Details and caveats: [docs/STUDY.md](docs/STUDY.md). Reproduce it with `python scripts/study.py` (needs the `gh` CLI).
 
+## Validated on real notebooks
+Five public notebooks were read by hand against the scanner output. Details, counts and limits are in [docs/VALIDATION.md](docs/VALIDATION.md). The sample is tiny, so treat it as a sanity check.
+
 ## Accuracy and security
 The code scanner is checked against a labeled regression benchmark on every CI run (`python -m leaklens.bench`, results in [docs/BENCHMARK.md](docs/BENCHMARK.md)). It is small and hand-written, so treat it as a regression guard, not a real-world accuracy claim. Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 

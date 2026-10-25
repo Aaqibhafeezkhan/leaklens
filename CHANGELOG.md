@@ -3,6 +3,12 @@
 ## Unreleased
 - Excel, JSON and Feather input alongside CSV and Parquet, via the new `excel` and `feather` extras for the optional formats
 
+## 0.11.0
+- Dataflow now follows transformed data into later splits, even after an earlier split (re-run notebook cells): correct kind and severity instead of "fit_on_full_data"
+- `ColumnTransformer` is classified by its steps (one-hot only is low severity)
+- `permutation_test_score` covered; repeated cross-validation calls are grouped per transform
+- Hand-checked 5 real notebooks: docs/VALIDATION.md; benchmark grows to 47 cases
+
 ## 0.10.0
 - New detector: preprocessing or resampling applied to all rows before `cross_val_score` / `cross_validate` / `GridSearchCV` (`preprocess_outside_cv`, `resample_outside_cv`)
 - README: fixed curly quotes that broke copy-pasting `pip install` lines

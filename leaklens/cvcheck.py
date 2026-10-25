@@ -6,7 +6,8 @@ import warnings
 from .leakage import Finding
 from .scanner import BENIGN, FUNCS, HINTS, RESAMPLE, _all_names, _name, _sev, _tnames
 
-CV_FUNCS = {"cross_val_score", "cross_validate", "cross_val_predict", "learning_curve", "validation_curve"}
+CV_FUNCS = {"cross_val_score", "cross_validate", "cross_val_predict", "learning_curve", "validation_curve",
+            "permutation_test_score"}
 SEARCH = ("GridSearchCV", "RandomizedSearchCV", "HalvingGridSearchCV", "HalvingRandomSearchCV", "BayesSearchCV")
 
 
@@ -25,6 +26,10 @@ def _fit_cls(c, ctor, funcs):
         if any(h in cls for h in HINTS):
             return cls
     return None
+
+
+def _on_partition(names) -> bool:
+    return any("train" in n.lower() or n.lower().startswith("x_tr") for n in names)
 
 
 def scan_cv(src: str, label: str = "<src>", cells=None) -> list[Finding]:
@@ -60,7 +65,10 @@ def scan_cv(src: str, label: str = "<src>", cells=None) -> list[Finding]:
             if isinstance(c, ast.Call):
                 cls = _fit_cls(c, ctor, funcs)
                 if cls and not any(b in cls for b in BENIGN):
-                    hit = (a.lineno, cls)
+                    argn = set()
+                    for x in c.args:
+                        argn |= _all_names(x)
+                    hit = (a.lineno, cls, argn)
                     break
         if hit is None:
             srcs = sorted(_all_names(a.value) & set(tr))
@@ -81,7 +89,7 @@ def scan_cv(src: str, label: str = "<src>", cells=None) -> list[Finding]:
                 return f"{label}[cell {i}]:{line - s + 1}"
         return f"{label}:{line}"
 
-    out = []
+    groups: dict = {}
     for c in sorted(calls, key=lambda x: (x.lineno, x.col_offset)):
         f = c.func
         fname = _name(c)
@@ -107,13 +115,19 @@ def scan_cv(src: str, label: str = "<src>", cells=None) -> list[Finding]:
                 break
         if not hit:
             continue
-        line, cls = hit
+        line, cls, argn = hit
         resample = any(r in cls for r in RESAMPLE)
         kind = "resample_outside_cv" if resample else "preprocess_outside_cv"
         sev = _sev(cls)
-        if not resample and any(s < line for s in split_lines):
+        if not resample and _on_partition(argn) and any(s < line for s in split_lines):
             sev = "low"
-        out.append(Finding(sev, kind, loc(c.lineno),
-                           f"{who}() is given data transformed by {cls} at {loc(line)}; the transform has seen "
-                           f"every fold's validation rows. Put it inside a Pipeline passed to {who}"))
+        g = groups.setdefault((line, kind), {"first": c, "who": who, "n": 0, "cls": cls, "sev": sev})
+        g["n"] += 1
+    out = []
+    for (line, kind), g in groups.items():
+        more = g["n"] - 1
+        extra = f" (and {more} more call{'s' if more > 1 else ''})" if more else ""
+        out.append(Finding(g["sev"], kind, loc(g["first"].lineno),
+                           f"{g['who']}(){extra} is given data transformed by {g['cls']} at {loc(line)}; the transform "
+                           f"has seen every fold's validation rows. Put it inside a Pipeline passed to {g['who']}"))
     return out

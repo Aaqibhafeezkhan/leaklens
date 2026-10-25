@@ -132,6 +132,17 @@ CASES += [
 ]
 
 
+_F = "from sklearn.preprocessing import MinMaxScaler, StandardScaler, OneHotEncoder\nfrom sklearn.compose import ColumnTransformer\nfrom sklearn.model_selection import StratifiedKFold, train_test_split, permutation_test_score\n"
+CASES += [
+    ("scaler on all data then manual KFold loop", _F + "X = MinMaxScaler().fit_transform(x)\ncv = StratifiedKFold(5)\nfor tr, te in cv.split(X, y):\n    pass\n", True),
+    ("full-data scaler then a second split", _F + "a = train_test_split(X, y, random_state=0)\nX = MinMaxScaler().fit_transform(x)\nb = train_test_split(X, y, random_state=0)\n", True),
+    ("ColumnTransformer with a scaler before split", _F + "ct = ColumnTransformer([('s', StandardScaler(), [0])])\nX = ct.fit_transform(X)\na = train_test_split(X, y, random_state=0)\n", True),
+    ("ColumnTransformer with only one-hot before split", _F + "ct = ColumnTransformer([('o', OneHotEncoder(), [0])])\nX = ct.fit_transform(X)\na = train_test_split(X, y, random_state=0)\n", False),
+    ("scaler on all data then permutation_test_score", _F + "Xs = MinMaxScaler().fit_transform(x)\nr = permutation_test_score(model, Xs, y, cv=5)\n", True),
+    ("scaler fitted per fold inside the loop", _F + "cv = StratifiedKFold(5)\nfor tr, te in cv.split(X, y):\n    sc = MinMaxScaler()\n    Xtr = sc.fit_transform(X[tr])\n    Xte = sc.transform(X[te])\n", False),
+]
+
+
 def markdown(m: dict) -> str:
     miss = "\n".join(f"- {e}" for e in m["errors"]) or "- none"
     return (
