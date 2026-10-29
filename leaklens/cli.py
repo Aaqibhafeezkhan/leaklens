@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import sys
 
 import pandas as pd
 from . import __version__
@@ -10,6 +12,22 @@ from .leakage import group_overlap, group_risk, scan, score, split_overlap, temp
 from .fixes import advice
 from .readers import read_dataset
 from .scanner import scan_path
+
+
+_SEVERITY_COLORS = {
+    "high": "\033[31m",
+    "medium": "\033[33m",
+    "low": "\033[32m",
+}
+_RESET = "\033[0m"
+
+
+def _severity_label(severity: str) -> str:
+    label = f"[{severity.upper()}]"
+    if "NO_COLOR" in os.environ or not sys.stdout.isatty():
+        return label
+    color = _SEVERITY_COLORS.get(severity.lower())
+    return f"{color}{label}{_RESET}" if color else label
 
 
 def _read_dataset(path):
@@ -91,7 +109,7 @@ def main(argv=None) -> int:
     else:
         print(f"LeakLens trust score: {rep['trust_score']}/100")
         for f in fs:
-            print(f"[{f.severity.upper()}] {f.kind} :: {f.column} :: {f.detail}")
+            print(f"{_severity_label(f.severity)} {f.kind} :: {f.column} :: {f.detail}")
             if a.explain and advice(f.kind):
                 print(f"    fix: {advice(f.kind)}")
         if fs:
