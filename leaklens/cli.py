@@ -24,7 +24,7 @@ _RESET = "\033[0m"
 
 def _severity_label(severity: str) -> str:
     label = f"[{severity.upper()}]"
-    if "NO_COLOR" in os.environ or not sys.stdout.isatty():
+    if os.environ.get("NO_COLOR") or not sys.stdout.isatty():
         return label
     color = _SEVERITY_COLORS.get(severity.lower())
     return f"{color}{label}{_RESET}" if color else label

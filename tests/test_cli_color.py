@@ -52,3 +52,9 @@ def test_piped_output_disables_color(monkeypatch, capsys):
     _, output = _run_scan(monkeypatch, capsys, "medium")
     assert "[MEDIUM]" in output
     assert "\033[" not in output
+
+
+def test_empty_no_color_is_ignored(monkeypatch):
+    monkeypatch.setenv("NO_COLOR", "")
+    monkeypatch.setattr(cli.sys.stdout, "isatty", lambda: True)
+    assert cli._severity_label("high") == "\033[31m[HIGH]\033[0m"
