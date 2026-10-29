@@ -79,6 +79,23 @@ CASES += [
 ]
 
 
+# issue #77: hand-rolled normalization with full-data statistics
+_N = "import numpy as np\n" + SPLIT
+CASES += [
+    ("z-score by hand before split",
+     _N + "X = (X - X.mean()) / X.std()\na = train_test_split(X, y, random_state=0)\n", True),
+    ("divide by max before split",
+     _N + "X = X / X.max()\na = train_test_split(X, y, random_state=0)\n", True),
+    ("np.mean subtraction before split",
+     _N + "X = X - np.mean(X)\na = train_test_split(X, y, random_state=0)\n", True),
+    ("column max scaling before split",
+     _N + "df['a'] = df['a'] / df['a'].max()\na = train_test_split(X, y, random_state=0)\n", True),
+    ("manual z-score with train statistics after split",
+     _N + "a = train_test_split(X, y, random_state=0)\nX_test = (X_test - X_train.mean()) / X_train.std()\n", False),
+    ("statistics from a different frame",
+     _N + "Z = (A - B.mean()) / B.std()\na = train_test_split(X, y, random_state=0)\n", False),
+]
+
 # Low-severity reproducibility detector (issue #13): flagged when random_state is missing.
 LOW_CASES: list[tuple[str, str, bool]] = [
     ("train_test_split without random_state",

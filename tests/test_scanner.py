@@ -160,3 +160,31 @@ def test_fix_hints_exist_for_new_kinds():
     from leaklens.fixes import advice
     assert advice("target_encode_before_split")
     assert advice("group_stat_before_split")
+
+
+MANUAL_SCALE = """
+from sklearn.model_selection import train_test_split
+X = (X - X.mean()) / X.std()
+a = train_test_split(X, y, random_state=42)
+"""
+
+MANUAL_SCALE_TRAIN_ONLY = """
+from sklearn.model_selection import train_test_split
+a = train_test_split(X, y, random_state=42)
+X_test = (X_test - X_train.mean()) / X_train.std()
+"""
+
+
+def test_manual_scale_before_split_is_high():
+    fs = [f for f in scan_source(MANUAL_SCALE) if f.kind == "manual_scale_before_split"]
+    assert fs and fs[0].severity == "high"
+    assert "before the split" in fs[0].detail
+
+
+def test_manual_scale_with_train_statistics_is_clean():
+    assert not scan_source(MANUAL_SCALE_TRAIN_ONLY)
+
+
+def test_manual_scale_fix_hint_exists():
+    from leaklens.fixes import advice
+    assert advice("manual_scale_before_split")

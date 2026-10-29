@@ -15,6 +15,7 @@ FIXES = {
     "group_leakage_risk": "Split by entity with GroupShuffleSplit or GroupKFold instead of a random split.",
     "no_random_state": "Pass random_state=<int> to train_test_split() and to KFold-family constructors (KFold(..., shuffle=True, random_state=...)); RepeatedKFold and RepeatedStratifiedKFold shuffle too and need it.",
     "target_encode_before_split": "Compute the target encoding from the training fold only (sklearn.preprocessing.TargetEncoder in a Pipeline, or out-of-fold encoding) so held-out rows never help build it.",
+    "manual_scale_before_split": "Compute the statistics (mean, std, min, max, ...) on the training split only and apply them to the test split, or use a scaler inside a Pipeline so held-out rows never help set the scale.",
     "group_stat_before_split": "Compute group statistics on the training split only, or wrap the encoding in a Pipeline and evaluate with cross-validation.",
 }
 

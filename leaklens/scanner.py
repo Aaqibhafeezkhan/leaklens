@@ -256,6 +256,38 @@ def _scan_core(src: str, label: str = "<src>", cells=None) -> list[Finding]:
             out.append(Finding("medium", "group_stat_before_split", loc(c.lineno),
                                f"{ast.unparse(c)} uses group statistics from all rows before the "
                                f"split at {loc(first)}; held-out rows help build the feature"))
+    # issue #77: hand-rolled scaling with full-data statistics before the split,
+    # e.g. (X - X.mean()) / X.std() or X / X.max(). Statistics taken from a train
+    # partition only occur after the split, so they are never reported.
+    STATS = {"mean", "std", "var", "min", "max", "median", "quantile"}
+
+    def stat_recv(n):
+        if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in STATS:
+            if n.args and isinstance(n.func.value, ast.Name) and n.func.value.id in ("np", "numpy"):
+                return set().union(*(_all_names(a) for a in n.args))
+            return _all_names(n.func.value)
+        return None
+
+    if first is not None:
+        inner = {id(k) for b in ast.walk(tree) if isinstance(b, ast.BinOp)
+                 for k in (b.left, b.right) if isinstance(k, ast.BinOp)}
+        binops = [b for b in ast.walk(tree) if isinstance(b, ast.BinOp)]
+        for b in sorted(binops, key=lambda x: (x.lineno, x.col_offset)):
+            if id(b) in inner or b.lineno >= first:
+                continue
+            recv, skip = set(), set()
+            for n in ast.walk(b):
+                r = stat_recv(n)
+                if r is not None:
+                    recv |= r
+                    skip |= {id(m) for m in ast.walk(n)}
+            if not recv:
+                continue
+            outside = {m.id for m in ast.walk(b) if isinstance(m, ast.Name) and id(m) not in skip}
+            if outside & recv:
+                out.append(Finding("high", "manual_scale_before_split", loc(b.lineno),
+                                   f"{ast.unparse(b)} scales with statistics from all rows "
+                                   f"before the split at {loc(first)}"))
     return out
 
 
